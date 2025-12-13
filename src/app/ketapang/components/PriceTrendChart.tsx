@@ -142,6 +142,7 @@ export default function PriceTrendChart() {
                         h="40px"
                         borderRadius="lg"
                         overflow="hidden"
+                        position="relative"
                         bg="white"
                         boxShadow="sm"
                       >

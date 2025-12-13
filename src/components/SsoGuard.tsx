@@ -50,14 +50,14 @@ export default function SsoGuard() {
           } else {
             const returnUrl = encodeURIComponent(window.location.href);
             const sep = NEXT_PUBLIC_SSO_LOGIN_URL.includes('?') ? '&' : '?';
-            window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}${sep}return_url=${returnUrl}`;
+            window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}`;
           }
         }
       } catch {
         // jika gagal verifikasi, arahkan ke halaman login
         const returnUrl = encodeURIComponent(window.location.href);
         const sep = NEXT_PUBLIC_SSO_LOGIN_URL.includes('?') ? '&' : '?';
-        window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}${sep}return_url=${returnUrl}`;
+        window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}`;
       }
     };
 

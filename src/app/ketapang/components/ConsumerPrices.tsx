@@ -136,6 +136,7 @@ export default function ConsumerPrices() {
                       h="60px"
                       borderRadius="md"
                       overflow="hidden"
+                      position="relative"
                       bg="gray.100"
                       display="flex"
                       alignItems="center"
