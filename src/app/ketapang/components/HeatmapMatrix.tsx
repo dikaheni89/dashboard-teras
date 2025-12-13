@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, Spinner, Alert, AlertIcon, Grid, GridItem,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaTh } from 'react-icons/fa';
 
 interface HeatmapData {
@@ -18,25 +18,6 @@ export default function HeatmapMatrix() {
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const getCategoryFromName = (name: string): string => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('beras') || lowerName.includes('jagung') || lowerName.includes('kedelai')) {
-      return 'Bahan Pokok';
-    } else if (lowerName.includes('bawang') || lowerName.includes('cabai')) {
-      return 'Sayuran';
-    } else if (lowerName.includes('daging') || lowerName.includes('ayam') || lowerName.includes('telur')) {
-      return 'Protein Hewani';
-    } else if (lowerName.includes('ikan')) {
-      return 'Ikan';
-    } else if (lowerName.includes('minyak') || lowerName.includes('gula') || lowerName.includes('garam')) {
-      return 'Bumbu Dapur';
-    } else if (lowerName.includes('tepung')) {
-      return 'Tepung';
-    } else {
-      return 'Lainnya';
-    }
-  };
 
   const getColorIntensity = (percentage: number): string => {
     const absPercentage = Math.abs(percentage);
@@ -62,7 +43,7 @@ export default function HeatmapMatrix() {
     return 'red.900';
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,12 +56,25 @@ export default function HeatmapMatrix() {
       
       const data = await response.json();
       
-      // Group data by category
       const categoryMap = new Map<string, any[]>();
       
       data.data?.forEach((item: any) => {
         if (item.today > 0 && item.yesterday > 0) {
-          const category = getCategoryFromName(item.name);
+          const lowerName = item.name.toLowerCase();
+          let category = 'Lainnya';
+          if (lowerName.includes('beras') || lowerName.includes('jagung') || lowerName.includes('kedelai')) {
+            category = 'Bahan Pokok';
+          } else if (lowerName.includes('bawang') || lowerName.includes('cabai')) {
+            category = 'Sayuran';
+          } else if (lowerName.includes('daging') || lowerName.includes('ayam') || lowerName.includes('telur')) {
+            category = 'Protein Hewani';
+          } else if (lowerName.includes('ikan')) {
+            category = 'Ikan';
+          } else if (lowerName.includes('minyak') || lowerName.includes('gula') || lowerName.includes('garam')) {
+            category = 'Bumbu Dapur';
+          } else if (lowerName.includes('tepung')) {
+            category = 'Tepung';
+          }
           if (!categoryMap.has(category)) {
             categoryMap.set(category, []);
           }
@@ -92,10 +86,9 @@ export default function HeatmapMatrix() {
         }
       });
 
-      // Transform data untuk heatmap
       const transformedData: HeatmapData[] = Array.from(categoryMap.entries()).map(([category, items]) => ({
         category,
-        items: items.slice(0, 6) // Ambil max 6 item per kategori
+        items: items.slice(0, 6)
       }));
 
       setHeatmapData(transformedData);
@@ -104,11 +97,11 @@ export default function HeatmapMatrix() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

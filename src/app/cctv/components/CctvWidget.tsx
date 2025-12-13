@@ -12,7 +12,7 @@ import {
   HStack, IconButton,
 } from "@chakra-ui/react";
 import JSMpeg from '@cycjimmy/jsmpeg-player';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { getBasePath } from "@/libs/utils/getBasePath";
 import { IResponse } from "@/app/api/cctv/semua/route";
 import CctvKategori from "@/app/cctv/components/CctvKategori";
@@ -52,7 +52,7 @@ export default function CctvWidget() {
     }
   };
 
-  const fetchCctvData = async (page: number) => {
+  const fetchCctvData = useCallback(async (page: number) => {
     setIsLoading(true);
     setIsError(false);
     try {
@@ -74,11 +74,11 @@ export default function CctvWidget() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiUrl]);
 
   useEffect(() => {
     fetchCctvData(1);
-  }, []);
+  }, [fetchCctvData]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

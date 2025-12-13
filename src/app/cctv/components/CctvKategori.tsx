@@ -29,7 +29,7 @@ import { Fullscreen, Minimize2 } from 'lucide-react';
 import useGetData from '@/app/hooks/useGetData';
 import { getBasePath } from '@/libs/utils/getBasePath';
 import {Area, CCTV, IResponse} from '@/app/api/cctv/kategori/route';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import JSMpeg from '@cycjimmy/jsmpeg-player';
 
 export default function CctvKategori() {
@@ -85,7 +85,7 @@ export default function CctvKategori() {
     setIsErrorStream(false);
   };
 
-  const initializeVideoStream = (id: string) => {
+  const initializeVideoStream = useCallback((id: string) => {
     const canvas = videoRefs.current[id];
 
     if (!canvas) {
@@ -110,16 +110,18 @@ export default function CctvKategori() {
       });
 
       playerInstances.current[id] = player;
+      let done = false;
       const checkRenderInterval = setInterval(() => {
         if (canvas && canvas.width > 0 && canvas.height > 0) {
           setIsLoadingStream(false);
           setIsErrorStream(false);
+          done = true;
           clearInterval(checkRenderInterval);
         }
       }, 200);
 
       setTimeout(() => {
-        if (isLoadingStream) {
+        if (!done) {
           setIsLoadingStream(false);
           setIsErrorStream(true);
           clearInterval(checkRenderInterval);
@@ -130,7 +132,7 @@ export default function CctvKategori() {
       setIsLoadingStream(false);
       setIsErrorStream(true);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen && selectedArea) {
@@ -138,16 +140,16 @@ export default function CctvKategori() {
         initializeVideoStream(selectedArea.id);
       }, 300);
     }
-  }, [isOpen, selectedArea]);
+  }, [isOpen, selectedArea, initializeVideoStream]);
 
   useEffect(() => {
+    const instances = playerInstances.current;
+    const id = selectedArea?.id;
     return () => {
-      if (selectedArea) {
+      if (id && instances[id]) {
         try {
-          if (playerInstances.current[selectedArea.id]) {
-            playerInstances.current[selectedArea.id].destroy();
-            delete playerInstances.current[selectedArea.id];
-          }
+          instances[id].destroy();
+          delete instances[id];
         } catch (err) {
           console.error('Failed to destroy player during cleanup:', err);
         }

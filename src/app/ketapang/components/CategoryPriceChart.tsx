@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, VStack, HStack, Badge, Spinner, Alert, AlertIcon, Icon,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaChartPie, FaCircle } from 'react-icons/fa';
 
 interface CategoryData {
@@ -37,7 +37,7 @@ export default function CategoryPriceChart() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -83,11 +83,11 @@ export default function CategoryPriceChart() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

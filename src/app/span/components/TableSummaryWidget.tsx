@@ -29,7 +29,9 @@ export default function TableSummaryWidget() {
   const apiUrl = `${getBasePath()}/api/spanlapor/dashboard`;
   const { data } = useGetData<ISpanResponse>(apiUrl.toString());
 
-  const tableData = data?.data?.span_lapor_summary || [];
+  const tableData = useMemo(() => {
+    return data?.data?.span_lapor_summary || [];
+  }, [data]);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

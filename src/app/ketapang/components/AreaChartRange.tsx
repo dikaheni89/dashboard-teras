@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, Spinner, Alert, AlertIcon,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine } from 'react-icons/fa';
 
@@ -26,7 +26,7 @@ export default function AreaChartRange() {
     return '> Rp 200k';
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -69,11 +69,11 @@ export default function AreaChartRange() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

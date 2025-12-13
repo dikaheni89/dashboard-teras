@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, VStack, HStack, Badge, Spinner, Alert, AlertIcon, Icon,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaChartLine, FaSortAmountUp } from 'react-icons/fa';
 
 interface RangeData {
@@ -17,15 +17,7 @@ export default function PriceRangeChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getPriceRange = (price: number): string => {
-    if (price < 10000) return '< Rp 10.000';
-    if (price < 20000) return 'Rp 10.000 - 20.000';
-    if (price < 50000) return 'Rp 20.000 - 50.000';
-    if (price < 100000) return 'Rp 50.000 - 100.000';
-    return '> Rp 100.000';
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -38,12 +30,15 @@ export default function PriceRangeChart() {
       
       const data = await response.json();
       
-      // Group data by price range
       const rangeMap = new Map<string, { count: number, items: string[] }>();
       
       data.data?.forEach((item: any) => {
         if (item.today > 0) {
-          const range = getPriceRange(item.today);
+          let range = '> Rp 100.000';
+          if (item.today < 10000) range = '< Rp 10.000';
+          else if (item.today < 20000) range = 'Rp 10.000 - 20.000';
+          else if (item.today < 50000) range = 'Rp 20.000 - 50.000';
+          else if (item.today < 100000) range = 'Rp 50.000 - 100.000';
           if (!rangeMap.has(range)) {
             rangeMap.set(range, { count: 0, items: [] });
           }
@@ -52,7 +47,6 @@ export default function PriceRangeChart() {
         }
       });
 
-      // Create chart data with colors
       const colors = ['#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#3182CE'];
       const chartData: RangeData[] = Array.from(rangeMap.entries()).map(([range, data], index) => ({
         range,
@@ -61,7 +55,6 @@ export default function PriceRangeChart() {
         color: colors[index % colors.length]
       }));
 
-      // Sort by price range (custom order)
       const rangeOrder = ['< Rp 10.000', 'Rp 10.000 - 20.000', 'Rp 20.000 - 50.000', 'Rp 50.000 - 100.000', '> Rp 100.000'];
       chartData.sort((a, b) => rangeOrder.indexOf(a.range) - rangeOrder.indexOf(b.range));
       
@@ -71,11 +64,11 @@ export default function PriceRangeChart() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (
