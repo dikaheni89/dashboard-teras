@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, Spinner, Alert, AlertIcon,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { FaChartPie } from 'react-icons/fa';
 
@@ -20,7 +20,26 @@ export default function PieChartCategory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const getCategoryFromName = (name: string): string => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('beras') || lowerName.includes('jagung') || lowerName.includes('kedelai')) {
+      return 'Bahan Pokok';
+    } else if (lowerName.includes('bawang') || lowerName.includes('cabai')) {
+      return 'Sayuran';
+    } else if (lowerName.includes('daging') || lowerName.includes('ayam') || lowerName.includes('telur')) {
+      return 'Protein Hewani';
+    } else if (lowerName.includes('ikan')) {
+      return 'Ikan';
+    } else if (lowerName.includes('minyak') || lowerName.includes('gula') || lowerName.includes('garam')) {
+      return 'Bumbu Dapur';
+    } else if (lowerName.includes('tepung')) {
+      return 'Tepung';
+    } else {
+      return 'Lainnya';
+    }
+  };
+
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -33,29 +52,17 @@ export default function PieChartCategory() {
       
       const data = await response.json();
       
+      // Group data by category
       const categoryMap = new Map<string, number>();
       
       data.data?.forEach((item: any) => {
         if (item.today > 0) {
-          const lowerName = item.name.toLowerCase();
-          let category = 'Lainnya';
-          if (lowerName.includes('beras') || lowerName.includes('jagung') || lowerName.includes('kedelai')) {
-            category = 'Bahan Pokok';
-          } else if (lowerName.includes('bawang') || lowerName.includes('cabai')) {
-            category = 'Sayuran';
-          } else if (lowerName.includes('daging') || lowerName.includes('ayam') || lowerName.includes('telur')) {
-            category = 'Protein Hewani';
-          } else if (lowerName.includes('ikan')) {
-            category = 'Ikan';
-          } else if (lowerName.includes('minyak') || lowerName.includes('gula') || lowerName.includes('garam')) {
-            category = 'Bumbu Dapur';
-          } else if (lowerName.includes('tepung')) {
-            category = 'Tepung';
-          }
+          const category = getCategoryFromName(item.name);
           categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
         }
       });
 
+      // Transform data untuk chart
       const transformedData: ChartData[] = Array.from(categoryMap.entries()).map(([category, count], index) => ({
         name: category,
         value: count,
@@ -68,11 +75,11 @@ export default function PieChartCategory() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   if (loading) {
     return (

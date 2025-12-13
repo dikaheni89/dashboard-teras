@@ -2,9 +2,8 @@
 import {
   Box, Flex, Text, VStack, HStack, Badge, Spinner, Alert, AlertIcon, Icon,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FaArrowUp, FaArrowDown, FaChartBar } from 'react-icons/fa';
-import Image from 'next/image';
 
 interface TrendData {
   name: string;
@@ -20,7 +19,7 @@ export default function PriceTrendChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,11 +52,11 @@ export default function PriceTrendChart() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   if (loading) {
     return (
@@ -142,16 +141,17 @@ export default function PriceTrendChart() {
                         h="40px"
                         borderRadius="lg"
                         overflow="hidden"
-                        position="relative"
                         bg="white"
                         boxShadow="sm"
                       >
-                        <Image
-                          src={item.background}
+                        <img 
+                          src={item.background} 
                           alt={item.name}
-                          fill
-                          sizes="40px"
-                          style={{ objectFit: 'cover' }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
                         />
                       </Box>
                     ) : (

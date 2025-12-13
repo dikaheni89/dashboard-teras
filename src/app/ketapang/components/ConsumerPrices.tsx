@@ -2,9 +2,8 @@
 import {
   Box, Flex, Text, VStack, HStack, Badge, Spinner, Alert, AlertIcon, Icon,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FaArrowUp, FaArrowDown, FaStar } from 'react-icons/fa';
-import Image from 'next/image';
 
 interface ConsumerData {
   title: string;
@@ -22,9 +21,9 @@ export default function ConsumerPrices() {
   const [consumerData, setConsumerData] = useState<ConsumerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -36,6 +35,8 @@ export default function ConsumerPrices() {
       }
       
       const data = await response.json();
+      
+      console.log('ConsumerPrices API response:', data);
       
       if (!data.data || !Array.isArray(data.data)) {
         throw new Error('Invalid data structure from API');
@@ -66,11 +67,11 @@ export default function ConsumerPrices() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   if (loading) {
     return (
@@ -136,19 +137,26 @@ export default function ConsumerPrices() {
                       h="60px"
                       borderRadius="md"
                       overflow="hidden"
-                      position="relative"
                       bg="gray.100"
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
                     >
-                      <Image
-                        src={item.background}
+                      <img 
+                        src={item.background} 
                         alt={item.title}
-                        fill
-                        sizes="60px"
-                        style={{ objectFit: 'cover' }}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                        onError={() => {
+                          setImageErrors(prev => new Set(prev).add(index));
+                        }}
                       />
+                      {imageErrors.has(index) && (
+                        <Icon as={FaStar} color="yellow.400" boxSize={6} />
+                      )}
                     </Box>
                   ) : (
                     <Icon as={FaStar} color="yellow.400" boxSize={6} />

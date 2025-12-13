@@ -2,7 +2,7 @@
 import {
   Box, Flex, Text, Spinner, Alert, AlertIcon,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FaChartBar } from 'react-icons/fa';
 
@@ -36,7 +36,7 @@ export default function BarChartPrices() {
     }
   };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -74,11 +74,11 @@ export default function BarChartPrices() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   if (loading) {
     return (
