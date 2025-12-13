@@ -48,12 +48,16 @@ export default function SsoGuard() {
           if (data?.message === 'No Valid Authorized') {
             window.location.href = NEXT_PUBLIC_SSO_RESTRICTION_URL;
           } else {
-            window.location.href = NEXT_PUBLIC_SSO_LOGIN_URL;
+            const returnUrl = encodeURIComponent(window.location.href);
+            const sep = NEXT_PUBLIC_SSO_LOGIN_URL.includes('?') ? '&' : '?';
+            window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}${sep}return_url=${returnUrl}`;
           }
         }
       } catch {
         // jika gagal verifikasi, arahkan ke halaman login
-        window.location.href = NEXT_PUBLIC_SSO_LOGIN_URL;
+        const returnUrl = encodeURIComponent(window.location.href);
+        const sep = NEXT_PUBLIC_SSO_LOGIN_URL.includes('?') ? '&' : '?';
+        window.location.href = `${NEXT_PUBLIC_SSO_LOGIN_URL}${sep}return_url=${returnUrl}`;
       }
     };
 
