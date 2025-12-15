@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { TOKEN_DASHBOARD, URL_DASHBOAD } from "@/config/server-constant";
 
 export interface IParamedicSchedule {
   operational_time_name: string;
@@ -27,13 +26,22 @@ const logError = (message: string, error?: Error) => {
   }
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const responseAPI = await fetch(`${URL_DASHBOAD}rsud-malingping/dashboard/jadwal-poli`, {
+    const { searchParams } = new URL(request.url);
+    const bulanParam = searchParams.get('bulan');
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const bulan = bulanParam && bulanParam !== 'current' ? bulanParam : `${year}-${month}`;
+
+    const externalUrl = `https://api-dashboard.bantenprov.go.id/api/rsud-malingping/jadwal/list?bulan=${bulan}`;
+
+    const responseAPI = await fetch(externalUrl, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${TOKEN_DASHBOARD}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
@@ -49,7 +57,24 @@ export async function GET() {
       );
     }
 
-    const data = await responseAPI.json();
+    const raw = await responseAPI.json();
+
+    const list: any[] =
+      Array.isArray(raw) ? raw :
+      Array.isArray(raw?.data?.last_updated) ? raw.data.last_updated :
+      Array.isArray(raw?.data) ? raw.data :
+      Array.isArray(raw?.list) ? raw.list :
+      Array.isArray(raw?.items) ? raw.items : [];
+
+    const normalized: IParamedicSchedule[] = list.map((item: any) => ({
+      operational_time_name: item.operational_time_name ?? item.operational_time ?? item.time ?? '',
+      paramedic_id: String(item.paramedic_id ?? item.id ?? ''),
+      paramedic_name: item.paramedic_name ?? item.name ?? '',
+      schedule_date: item.schedule_date ?? item.date ?? '',
+      service_unit_name: item.service_unit_name ?? item.unit_name ?? item.service_unit ?? '',
+    })).filter((x: IParamedicSchedule) =>
+      x.schedule_date && x.paramedic_name && x.service_unit_name
+    );
 
     return NextResponse.json(
       {
@@ -57,7 +82,7 @@ export async function GET() {
         success: true,
         message: 'Sukses',
         data: {
-          last_updated: data.data.last_updated,
+          last_updated: normalized,
         },
       },
       { status: 200 }
