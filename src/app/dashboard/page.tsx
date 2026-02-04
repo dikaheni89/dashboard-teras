@@ -2,7 +2,7 @@
 import { Box, Container, Flex } from "@chakra-ui/react";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import StatistikWidget from "@/app/dashboard/components/StatistikWidget";
-import WeatherWidget from "@/app/dashboard/components/WeaterWidget";
+// import WeatherWidget from "@/app/dashboard/components/WeaterWidget";
 import HeaderLayout from "@/components/layout/HeaderLayout";
 import { StarIcon } from "lucide-react";
 import { getBasePath } from "@/libs/utils/getBasePath";
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         </Container>
       </Box>
       <Box flex="1" overflowY="auto">
-        <Container maxW="9xl" bg="transparent">
+        {/* <Container maxW="9xl" bg="transparent">
           <Box
             position="relative"
             borderRadius="lg"
@@ -105,7 +105,7 @@ export default function DashboardPage() {
           >
             <WeatherWidget />
           </Box>
-        </Container>
+        </Container> */}
         <Container maxW="9xl" pb={28}>
           <Box
             position="relative"
