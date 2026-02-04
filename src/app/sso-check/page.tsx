@@ -24,6 +24,7 @@ export default function SsoCheckPage() {
         });
         const json = await res.json();
         setData(json);
+        console.log(json);
       } catch (e: any) {
         setError(e?.message || 'Failed to verify SSO');
       } finally {
