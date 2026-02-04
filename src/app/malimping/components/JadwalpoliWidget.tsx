@@ -16,7 +16,7 @@ import useGetData from "@/app/hooks/useGetData";
 import { IResponseParamedice } from "@/app/api/malimping/poli/route";
 
 export default function JadwalpoliWidget() {
-  const apiUrl = `${getBasePath()}/api/malimping/poli?bulan=current`;
+  const apiUrl = `${getBasePath()}/api/malimping/list?bulan=current`;
   const { data } = useGetData<IResponseParamedice>(apiUrl);
 
   if (!data || !Array.isArray(data.data?.last_updated)) {
