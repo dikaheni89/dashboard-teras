@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'Authorization': 'Bearer pantangpulang-SEBELUMTELANJANG#!-b4nt3n',
       },
     });
 
