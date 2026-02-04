@@ -12,12 +12,13 @@ import {
 } from "chart.js";
 import {getBasePath} from "@/libs/utils/getBasePath";
 import useGetData from "@/app/hooks/useGetData";
-import {IResponse} from "@/app/api/dashboard/tren/route";
+import {IResponseStatus} from "@/app/api/kesehatan/status/route";
+
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 export default function TrenKomoditasWidget() {
-  const apiUrl = `${getBasePath()}/api/dashboard/tren`;
-  const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const apiUrl = `${getBasePath()}/api/kesehatan/status`;
+  const { data, isLoading, isError } = useGetData<IResponseStatus>(apiUrl);
 
   if (isLoading) {
     return (
@@ -30,20 +31,20 @@ export default function TrenKomoditasWidget() {
   if (isError) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <Text color="red.500">Gagal memuat data tren komoditas.</Text>
+        <Text color="red.500">Gagal memuat data status tempat tidur.</Text>
       </Box>
     );
   }
 
-  const tanggalLabels = data?.data.map((item) => item.tanggal) || [];
-  const hargaRataValues = data?.data.map((item) => item.harga_rata) || [];
+  const labels = data?.data.map((item, index) => item.status || `Status ${index + 1}`) || [];
+  const values = data?.data.map((item) => item.jumlah) || [];
 
-  const barDataPendapatan = {
-    labels: tanggalLabels,
+  const barData = {
+    labels: labels,
     datasets: [
       {
-        label: "Harga Rata-Rata",
-        data: hargaRataValues,
+        label: "Jumlah",
+        data: values,
         backgroundColor: "#FBBF24",
         borderRadius: 6,
       },
@@ -60,12 +61,7 @@ export default function TrenKomoditasWidget() {
       tooltip: {
         callbacks: {
           label: (context: any) => {
-            const rawValue = context.raw;
-            const formatted = new Intl.NumberFormat("id-ID", {
-              style: "currency",
-              currency: "IDR",
-            }).format(rawValue);
-            return `Harga: ${formatted}`;
+            return `Jumlah: ${context.raw}`;
           },
         },
       },
@@ -87,10 +83,7 @@ export default function TrenKomoditasWidget() {
         },
         ticks: {
           color: "#1E3A8A",
-          callback: (value: any) =>
-            new Intl.NumberFormat("id-ID", {
-              maximumFractionDigits: 0,
-            }).format(value),
+          callback: (value: any) => value,
         },
       },
     },
@@ -100,10 +93,10 @@ export default function TrenKomoditasWidget() {
   return (
     <Box h="370px" bg="primary.50" p={4} borderRadius="lg" shadow="md">
       <Heading size="sm" mb={4} color="primary.800">
-        Tren Harga Komoditas Harian
+        Status Tempat Tidur
       </Heading>
       <Box height="300px">
-        <Bar data={barDataPendapatan} options={barOptions} />
+        <Bar data={barData} options={barOptions} />
       </Box>
     </Box>
   );
