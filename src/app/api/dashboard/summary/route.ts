@@ -60,7 +60,6 @@ export async function GET() {
       },
       method: "GET",
     });
-    console.log(TOKEN_DASHBOARD);
     if (!responseAPI.ok) {
       logError(`Error ${responseAPI.status}: ${responseAPI.statusText}`);
       return NextResponse.json(

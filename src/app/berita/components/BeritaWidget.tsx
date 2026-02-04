@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { RepeatIcon } from 'lucide-react';
 import { getBasePath } from '@/libs/utils/getBasePath';
+import { formatDateTime } from '@/libs/utils/helper';
 import useGetData from "@/app/hooks/useGetData";
 
 type NewsItem = {
@@ -91,7 +92,7 @@ export default function BeritaWidget() {
                   {item.source.charAt(0).toUpperCase() + item.source.slice(1)}
                 </Badge>
                 <Text fontSize="sm" color="gray.500">
-                  {new Date(item.pub_date).toLocaleString('id-ID')}
+                  {formatDateTime(item.pub_date)}
                 </Text>
               </Flex>
               <Heading size="sm" mb={2}>

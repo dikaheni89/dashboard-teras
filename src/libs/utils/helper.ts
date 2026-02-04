@@ -48,6 +48,20 @@ export const formatDateIndonesia = (dateString: string): string => {
   return `${namaHari}, ${tanggal} ${namaBulan} ${tahun}`;
 };
 
+export const formatDateTime = (dateString: string): string => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+    hour12: false
+  }).format(date);
+};
+
 export const formatDateIndonesia2 = (dateString: string): string => {
   if (!dateString) return "-";
 
