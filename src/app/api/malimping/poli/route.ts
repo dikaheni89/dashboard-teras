@@ -60,19 +60,31 @@ export async function GET(request: Request) {
 
     const raw = await responseAPI.json();
 
-    const list: any[] =
-      Array.isArray(raw) ? raw :
-      Array.isArray(raw?.data?.last_updated) ? raw.data.last_updated :
-      Array.isArray(raw?.data) ? raw.data :
-      Array.isArray(raw?.list) ? raw.list :
-      Array.isArray(raw?.items) ? raw.items : [];
+    let list: any[] = [];
+
+    // Deteksi format baru: { data: [{ bulan: "...", jadwal: [...] }] }
+    if (raw?.data && Array.isArray(raw.data) && raw.data.length > 0 && Array.isArray(raw.data[0]?.jadwal)) {
+      list = raw.data.flatMap((d: any) => d.jadwal || []);
+    }
+    // Fallback format lama
+    else if (Array.isArray(raw)) {
+      list = raw;
+    } else if (Array.isArray(raw?.data?.last_updated)) {
+      list = raw.data.last_updated;
+    } else if (Array.isArray(raw?.data)) {
+      list = raw.data;
+    } else if (Array.isArray(raw?.list)) {
+      list = raw.list;
+    } else if (Array.isArray(raw?.items)) {
+      list = raw.items;
+    }
 
     const normalized: IParamedicSchedule[] = list.map((item: any) => ({
-      operational_time_name: item.operational_time_name ?? item.operational_time ?? item.time ?? '',
+      operational_time_name: item.operational_time_name ?? item.operational_time ?? item.time ?? (item.jam_mulai && item.jam_selesai ? `${item.jam_mulai} - ${item.jam_selesai}` : ''),
       paramedic_id: String(item.paramedic_id ?? item.id ?? ''),
-      paramedic_name: item.paramedic_name ?? item.name ?? '',
-      schedule_date: item.schedule_date ?? item.date ?? '',
-      service_unit_name: item.service_unit_name ?? item.unit_name ?? item.service_unit ?? '',
+      paramedic_name: item.paramedic_name ?? item.name ?? item.dokter ?? '',
+      schedule_date: item.schedule_date ?? item.date ?? item.tanggal ?? '',
+      service_unit_name: item.service_unit_name ?? item.unit_name ?? item.service_unit ?? item.unit ?? '',
     })).filter((x: IParamedicSchedule) =>
       x.schedule_date && x.paramedic_name && x.service_unit_name
     );
