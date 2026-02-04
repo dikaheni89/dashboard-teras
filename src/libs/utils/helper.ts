@@ -1,3 +1,9 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import "dayjs/locale/id";
+
+dayjs.extend(utc);
+
 export const formatRp = (value: number) =>
   new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -50,16 +56,9 @@ export const formatDateIndonesia = (dateString: string): string => {
 
 export const formatDateTime = (dateString: string): string => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-    hour12: false
-  }).format(date);
+  // Use UTC mode to prevent timezone shift (e.g. 22:00 -> 05:00 next day)
+  // Format: "Kamis, 4 Februari 2026 22.02"
+  return dayjs(dateString).utc().locale('id').format('dddd, D MMMM YYYY HH.mm');
 };
 
 export const formatDateIndonesia2 = (dateString: string): string => {
