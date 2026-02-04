@@ -39,13 +39,25 @@ export default function TrenKomoditasWidget() {
   const labels = data?.data.map((item, index) => item.status || `Status ${index + 1}`) || [];
   const values = data?.data.map((item) => item.jumlah) || [];
 
+  // Tentukan warna berdasarkan status
+  const backgroundColors = data?.data.map((item) => {
+    const status = item.status?.toUpperCase() || "";
+    if (status.includes("KOSONG")) {
+      return "#10B981"; // Hijau untuk Kosong
+    }
+    if (status.includes("ISI") || status.includes("TERISI")) {
+      return "#EF4444"; // Merah untuk Isi
+    }
+    return "#FBBF24"; // Default Kuning
+  }) || [];
+
   const barData = {
     labels: labels,
     datasets: [
       {
         label: "Jumlah",
         data: values,
-        backgroundColor: "#FBBF24",
+        backgroundColor: backgroundColors,
         borderRadius: 6,
       },
     ],
