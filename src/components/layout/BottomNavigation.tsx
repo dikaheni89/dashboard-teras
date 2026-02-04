@@ -21,13 +21,14 @@ export default function BottomNavigation() {
 
   const links = [
     { label: 'Teras Keuangan', href: '/belanja' },
-    { label: 'Teras CCTV', href: '/cctv' },
-    { label: 'Teras BMKG', href: '/kebencanaan' },
-    { label: 'Teras Media', href: '/berita' },
-    { label: 'Teras Kesehatan', href: '/kesehatan' },
-    { label: 'Teras Kependudukan', href: '/kependudukan' },
+    { label: 'Teras Pendapatan', href: '/pendapatan' },
     { label: 'Teras Pangan', href: '/ketapang' },
     { label: 'Teras Perizinan', href: '/perizinan' },
+    { label: 'Teras Kependudukan', href: '/kependudukan' },
+    { label: 'Teras Media', href: '/berita' },
+    { label: 'Teras CCTV', href: '/cctv' },
+    // { label: 'Teras BMKG', href: '/kebencanaan' },
+    { label: 'Teras Kesehatan', href: '/kesehatan' },
     { label: 'Teras Ketenagakerjaan', href: '/tenagakerja' },
     { label: 'Teras SP4N Lapor', href: '/span' },
     { label: 'Teras Infrastruktur', href: '/infrastruktur' },
@@ -37,7 +38,6 @@ export default function BottomNavigation() {
     { label: 'Teras Pariwisata', href: '/pariwisata' },
     { label: 'Teras Regulasi', href: '/regulasi' },
     { label: 'Teras Lingkungan', href: '/lingkungan' },
-    { label: 'Teras Pendapatan', href: '/pendapatan' },
     { label: 'Teras PPID', href: '/ppid' },
   ];
 
