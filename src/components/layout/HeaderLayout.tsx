@@ -65,7 +65,7 @@ export default function HeaderLayout({ stats, image }: HeaderLayoutProps) {
                 {item.icon && (
                   <Icon as={item.icon} boxSize={8} color="blue.900" transition="color 0.3s ease" />
                 )}
-                <Text fontSize="lg" fontWeight="bold" color={item.badgeColor ? 'green.700' : 'gray.700'}>
+                <Text fontSize="md" fontWeight="bold" color={item.badgeColor ? 'green.700' : 'gray.700'}>
                   {item.value}
                 </Text>
                 <Text fontSize="md" color={item.colortitle || "gray.700"}>
