@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { KODE_WILAYAH_PROVINSI } from "@/config/server-constant";
+
 
 export type CuacaDetail = {
   datetime: string;
@@ -19,13 +19,25 @@ export type CuacaDetail = {
   local_datetime: string;
 };
 
+export type Lokasi = {
+  adm1: string | null;
+  adm2: string | null;
+  kotkab: string | null;
+  lat: number | null;
+  lon: number | null;
+  provinsi: string | null;
+  timezone: string | null;
+  type: string | null;
+  [key: string]: unknown;
+};
+
 type LokasiCuaca = {
-  lokasi: Record<string, unknown>;
+  lokasi: Lokasi;
   cuaca: CuacaDetail[];
 };
 
 export type WeatherData = {
-  lokasi: Record<string, unknown>;
+  lokasi: Lokasi;
   cuaca: CuacaDetail;
   update_time: string;
   update_hour: string;
@@ -60,7 +72,7 @@ function extractUTCTime(datetime: string): string {
 
 export async function GET() {
   try {
-    const responseAPI = await fetch(`https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather/?adm=${KODE_WILAYAH_PROVINSI}`, {
+    const responseAPI = await fetch(`https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather/?adm=36`, {
       method: 'GET',
       headers: {
         'X-API-KEY': 'HOX0kpMqnpbJD8eo',
