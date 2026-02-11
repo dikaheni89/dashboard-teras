@@ -8,11 +8,16 @@ import { StarIcon } from "lucide-react";
 import { getBasePath } from "@/libs/utils/getBasePath";
 import useGetData from "@/app/hooks/useGetData";
 import { IResponse } from "@/app/api/keuangan/utama/route";
+import { LastUpdatedResponse } from "@/app/api/keuangan/lastupdate/route";
 import { formatRp } from "@/libs/utils/helper";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
 
 export default function DashboardPage() {
   const apiUrl = `${getBasePath()}/api/keuangan/utama`;
   const { data, isError } = useGetData<IResponse>(apiUrl.toString());
+  const { data: dataKeuangan } = useGetData<LastUpdatedResponse>(`${getBasePath()}/api/keuangan/lastupdate`);
+  const { data: dataPendapatan } = useGetData<LastUpdatedResponse>(`${getBasePath()}/api/pendapatan/lastupdate`);
 
   let headerStats = [
     {
@@ -46,17 +51,25 @@ export default function DashboardPage() {
       data_utama: { target_pendapatan_daerah, realisasi_belanja_daerah },
     } = data.data;
 
+    const subKeuangan = dataKeuangan?.data?.updated_at
+      ? `per ${dayjs(dataKeuangan.data.updated_at).locale("id").format("MMMM YYYY")}`
+      : "-";
+
+    const subPendapatan = dataPendapatan?.data?.updated_at
+      ? `per ${dayjs(dataPendapatan.data.updated_at).locale("id").format("MMMM YYYY")}`
+      : "-";
+
     headerStats = [
       {
         title: "TOTAL PENDAPATAN DAERAH",
         value: formatRp(target_pendapatan_daerah),
-        sub: "per Januari 2025",
+        sub: subKeuangan,
         icon: StarIcon,
       },
       {
         title: "REALISASI PENDAPATAN & BELANJA",
         value: formatRp(realisasi_belanja_daerah),
-        sub: "per Maret 2025",
+        sub: subPendapatan,
         icon: StarIcon,
       },
       {
