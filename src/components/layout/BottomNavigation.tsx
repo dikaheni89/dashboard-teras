@@ -27,7 +27,7 @@ export default function BottomNavigation() {
     { label: 'Teras Kependudukan', href: '/kependudukan' },
     { label: 'Teras Media', href: '/berita' },
     { label: 'Teras CCTV', href: '/cctv' },
-    // { label: 'Teras BMKG', href: '/kebencanaan' },
+    { label: 'Teras BMKG', href: '/kebencanaan' },
     { label: 'Teras Kesehatan', href: '/kesehatan' },
     { label: 'Teras Ketenagakerjaan', href: '/tenagakerja' },
     { label: 'Teras SP4N Lapor', href: '/span' },

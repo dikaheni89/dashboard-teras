@@ -1,3 +1,5 @@
+'use client';
+
 import {Box, Button, Center, Flex, Icon, Image, Text} from "@chakra-ui/react";
 import Slider from "react-slick";
 import {FiCloud} from "react-icons/fi";
@@ -8,6 +10,8 @@ import useGetData from "@/app/hooks/useGetData";
 import {ResponseDataAPI} from "@/app/api/bmkg/dashboard/route";
 import {getBasePath} from "@/libs/utils/getBasePath";
 import {useEffect, useState} from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
 
 const settings = {
   dots: false,
@@ -24,8 +28,6 @@ const settings = {
   ],
 };
 
-const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
-
 export default function ListCuaca() {
   const { isError, data } = useGetData<ResponseDataAPI>(`${getBasePath()}/api/bmkg/dashboard`);
   const [forecast, setForecast] = useState<Array<{
@@ -39,8 +41,8 @@ export default function ListCuaca() {
 
   useEffect(() => {
     if (data && data.data) {
-      const formattedData = data.data.slice(0, 7).map((item, index) => ({
-        day: daysOfWeek[index],
+      const formattedData = data.data.map((item) => ({
+        day: dayjs(item.cuaca.local_datetime).locale('id').format('dddd, DD MMM'),
         icon: item.cuaca.image,
         color: "blue.500",
         temp: `${item.cuaca.tmax}°C / ${item.cuaca.tmin}°C`,

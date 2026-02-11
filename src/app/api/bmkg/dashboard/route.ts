@@ -1,47 +1,32 @@
 import { NextResponse } from 'next/server';
-import {CUACA_PROVINSI, KODE_WILAYAH_PROVINSI} from "@/config/server-constant";
-// remove filesystem dependency
-import {getBasePath} from "@/libs/utils/getBasePath";
+import { KODE_WILAYAH_PROVINSI } from "@/config/server-constant";
 
-type CuacaEntry = {
+export type CuacaDetail = {
   datetime: string;
+  tmin: number;
+  tmax: number;
+  humin: number;
+  humax: number;
+  tcc: number;
+  wd: string;
+  ws: number;
+  vs: number;
+  weather: number;
+  weather_desc: string;
+  weather_desc_en: string;
+  image: string;
+  analysis_date: string;
   local_datetime: string;
-  [key: string]: unknown;
 };
 
 type LokasiCuaca = {
   lokasi: Record<string, unknown>;
-  cuaca: CuacaEntry[][];
+  cuaca: CuacaDetail[];
 };
 
 export type WeatherData = {
-  lokasi: {
-    adm1: string;
-    adm2: string;
-    provinsi: string;
-    kotkab: string;
-    lon: number;
-    lat: number;
-    timezone: string;
-    type: string;
-  };
-  cuaca: {
-    datetime: string;
-    tmin: number;
-    tmax: number;
-    humin: number;
-    humax: number;
-    tcc: number;
-    wd: string;
-    ws: number;
-    vs: number;
-    weather: number;
-    weather_desc: string;
-    weather_desc_en: string;
-    image: string;
-    analysis_date: string;
-    local_datetime: string;
-  };
+  lokasi: Record<string, unknown>;
+  cuaca: CuacaDetail;
   update_time: string;
   update_hour: string;
   local_time: string;
@@ -51,21 +36,6 @@ export type ResponseDataAPI = {
   status: number;
   server_time: string;
   data: WeatherData[];
-};
-
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch(`${getBasePath()}/api/token`, { method: 'GET' });
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data && result.data.access_token) {
-        return result.data.access_token;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
 };
 
 function getRoundedDownLocalDatetimeString(): string {
@@ -90,25 +60,18 @@ function extractUTCTime(datetime: string): string {
 
 export async function GET() {
   try {
-    const token = await getAccessToken();
-
-    const responseAPI = await fetch(`${CUACA_PROVINSI}` + `${KODE_WILAYAH_PROVINSI}`, {
+    const responseAPI = await fetch(`https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather/?adm=${KODE_WILAYAH_PROVINSI}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      }
+        'X-API-KEY': 'HOX0kpMqnpbJD8eo',
+        'X-APPLICATION-KEY': 'webterpadu'
+      },
+      next: { revalidate: 3600 } // Cache for 1 hour
     });
 
-    console.log(responseAPI);
-
     if (!responseAPI.ok) {
-      const responseText = await responseAPI.text();
       return NextResponse.json(
-        {
-          status: responseAPI.status,
-          message: responseText,
-        },
+        { message: 'Failed to fetch weather data' },
         { status: responseAPI.status }
       );
     }
@@ -117,14 +80,15 @@ export async function GET() {
     const currentLocalDatetime = getRoundedDownLocalDatetimeString();
 
     const filteredData = result.data?.map((item: LokasiCuaca) => {
-      const flatCuaca = item.cuaca.flat();
+      // In new API, cuaca is already 1D array of objects
+      const flatCuaca = item.cuaca;
 
       const beforeOrEqualNow = flatCuaca
-        .filter((entry: CuacaEntry) => entry.local_datetime <= currentLocalDatetime)
+        .filter((entry: CuacaDetail) => entry.local_datetime <= currentLocalDatetime)
         .sort((a, b) => b.local_datetime.localeCompare(a.local_datetime));
 
       const afterNow = flatCuaca
-        .filter((entry: CuacaEntry) => entry.local_datetime > currentLocalDatetime)
+        .filter((entry: CuacaDetail) => entry.local_datetime > currentLocalDatetime)
         .sort((a, b) => a.local_datetime.localeCompare(b.local_datetime));
 
       const current = beforeOrEqualNow[0] || afterNow[0];
@@ -139,7 +103,7 @@ export async function GET() {
         }
         : null;
     })
-      .filter((item: unknown): item is ResponseDataAPI => item !== null);
+      .filter((item: unknown): item is WeatherData => item !== null);
 
     return NextResponse.json(
       {
@@ -153,10 +117,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching weather data:", error);
     return NextResponse.json(
-      {
-        status: 500,
-        message: "Terjadi kesalahan saat mengambil data cuaca",
-      },
+      { message: 'Internal Server Error' },
       { status: 500 }
     );
   }
