@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import {CUACA_PROVINSI, KODE_WILAYAH_PROVINSI} from "@/config/server-constant";
-// remove filesystem dependency
-import {getBasePath} from "@/libs/utils/getBasePath";
 
 interface LokasiKabupaten {
   adm2: string | null;
@@ -13,37 +10,13 @@ interface DataResponseKabupaten {
   lokasi: LokasiKabupaten;
 }
 
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch(`${getBasePath()}/api/token`, { method: 'GET' });
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data && result.data.access_token) {
-        return result.data.access_token;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 export async function GET() {
-  const token = await getAccessToken();
-
-  if (!token) {
-    console.error("Token tidak ditemukan, request dibatalkan.");
-    return NextResponse.json(
-      { message: "Token tidak ditemukan." },
-      { status: 401 }
-    );
-  }
-
   try {
-    const responseAPI = await fetch(`${CUACA_PROVINSI}${KODE_WILAYAH_PROVINSI}`, {
+    const responseAPI = await fetch('https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather?adm=36', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'X-API-KEY': 'HOX0kpMqnpbJD8eo',
+        'X-APPLICATION-KEY': 'webterpadu',
         'Accept': 'application/json',
       }
     });

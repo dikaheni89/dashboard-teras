@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { CUACA_PROVINSI, KODE_WILAYAH_PROVINSI } from "@/config/server-constant";
-// remove filesystem dependency
-import {getBasePath} from "@/libs/utils/getBasePath";
 
 export type WeatherData = {
   lokasi: {
@@ -41,21 +38,6 @@ export type ResponseDataAPI = {
   data: WeatherData[];
 };
 
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch(`${getBasePath()}/api/token`, { method: 'GET' });
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data && result.data.access_token) {
-        return result.data.access_token;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 function getRoundedDownLocalDatetimeString(): string {
   const now = new Date();
   const offsetInMs = 7 * 60 * 60 * 1000;
@@ -84,12 +66,12 @@ export async function GET(request: Request) {
       );
     }
 
-    const token = await getAccessToken();
-    const responseAPI = await fetch(`${CUACA_PROVINSI}${KODE_WILAYAH_PROVINSI}`, {
+    const responseAPI = await fetch('https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather?adm=36', {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        'X-API-KEY': 'HOX0kpMqnpbJD8eo',
+        'X-APPLICATION-KEY': 'webterpadu',
+        'Accept': 'application/json',
       },
     });
 
