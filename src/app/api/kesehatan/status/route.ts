@@ -24,12 +24,17 @@ const logError = (message: string, error?: Error) => {
 
 export async function GET() {
   try {
+    if (!URL_DASHBOAD) {
+       throw new Error("URL_DASHBOARD tidak dikonfigurasi.");
+    }
+
     const responseAPI = await fetch(URL_DASHBOAD + 'teras-kesehatan/status-tempat-tidur', {
       headers: {
         'Authorization': `Bearer ${TOKEN_DASHBOARD}`,
         'Content-Type': 'application/json',
       },
-      method: 'GET'
+      method: 'GET',
+      cache: 'no-store',
     });
 
     if (!responseAPI.ok) {
@@ -45,6 +50,17 @@ export async function GET() {
     }
 
     const data = await responseAPI.json();
+
+    if (!data?.data || !Array.isArray(data.data)) {
+       return NextResponse.json(
+        {
+          status: 500,
+          success: false,
+          message: 'Format data dari server tidak sesuai.'
+        },
+        { status: 500 }
+      );
+    }
 
     const formattedData: StatusTempat[] = data.data.map((item: StatusTempat) => ({
       jumlah: item.jumlah,
@@ -68,7 +84,7 @@ export async function GET() {
       {
         status: 500,
         success: false,
-        message: 'Terjadi kesalahan pada server, silakan coba lagi.'
+        message: `Terjadi kesalahan pada server: ${error instanceof Error ? error.message : 'Unknown error'}`
       },
       { status: 500 }
     );
