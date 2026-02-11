@@ -78,18 +78,22 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           status: 400,
-          message: "Parameter adm2 tidak ditemukan",
+          message: "Parameter adm3 tidak ditemukan",
         },
         { status: 400 }
       );
     }
 
-    const token = await getAccessToken();
-    const responseAPI = await fetch(`${CUACA_PROVINSI}adm3=${adm3}`, {
+    // adm3 format: 36.02.27
+    // We need parent adm2: 36.02
+    const adm2 = adm3.split('.').slice(0, 2).join('.');
+
+    const responseAPI = await fetch(`https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather?adm=${adm2}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        'X-API-KEY': 'HOX0kpMqnpbJD8eo',
+        'X-APPLICATION-KEY': 'webterpadu',
+        'Accept': 'application/json',
       },
     });
 
@@ -107,8 +111,8 @@ export async function GET(request: Request) {
     const result = await responseAPI.json();
     const currentLocalDatetime = getRoundedDownLocalDatetimeString();
 
-    // Cari data berdasarkan adm2
-    const filteredData = result.data.find((item: WeatherData) => item.lokasi.adm3 === adm3);
+    // Cari data berdasarkan adm3
+    const filteredData = result.data.find((item: WeatherData) => item.lokasi.adm3 === adm3 && item.lokasi.type === 'adm3');
 
     if (!filteredData) {
       return NextResponse.json(

@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { CUACA_PROVINSI } from "@/config/server-constant";
-// remove filesystem dependency
-import {getBasePath} from "@/libs/utils/getBasePath";
 
 export type WeatherData = {
   lokasi: {
@@ -41,21 +38,6 @@ export type ResponseDataAPI = {
   data: WeatherData[];
 };
 
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch(`${getBasePath()}/api/token`, { method: 'GET' });
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data && result.data.access_token) {
-        return result.data.access_token;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 function getRoundedDownLocalDatetimeString(): string {
   const now = new Date();
   const offsetInMs = 7 * 60 * 60 * 1000;
@@ -78,18 +60,22 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           status: 400,
-          message: "Parameter adm2 tidak ditemukan",
+          message: "Parameter adm4 tidak ditemukan",
         },
         { status: 400 }
       );
     }
 
-    const token = await getAccessToken();
-    const responseAPI = await fetch(`${CUACA_PROVINSI}adm4=${adm4}`, {
+    // adm4 format: 36.02.01.2001 (example)
+    // We need parent adm3: 36.02.01
+    const adm3 = adm4.split('.').slice(0, 3).join('.');
+
+    const responseAPI = await fetch(`https://api-webterpadu.bantenprov.go.id/api/v1/splp/weather?adm=${adm3}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        'X-API-KEY': 'HOX0kpMqnpbJD8eo',
+        'X-APPLICATION-KEY': 'webterpadu',
+        'Accept': 'application/json',
       },
     });
 
@@ -107,8 +93,8 @@ export async function GET(request: Request) {
     const result = await responseAPI.json();
     const currentLocalDatetime = getRoundedDownLocalDatetimeString();
 
-    // Cari data berdasarkan adm2
-    const filteredData = result.data.find((item: WeatherData) => item.lokasi.adm4 === adm4);
+    // Cari data berdasarkan adm4
+    const filteredData = result.data.find((item: WeatherData) => item.lokasi.adm4 === adm4 && item.lokasi.type === 'adm4');
 
     if (!filteredData) {
       return NextResponse.json(
@@ -128,9 +114,7 @@ export async function GET(request: Request) {
       },
       { status: 200 }
     );
-
   } catch (error) {
-    console.error("Error fetching weather data:", error);
     return NextResponse.json(
       {
         status: 500,
