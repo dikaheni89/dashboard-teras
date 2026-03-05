@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '',
   reactStrictMode: false,
   env: {
     NEXT_PUBLIC_APP_NAME: process.env.APP_NAME,
@@ -16,15 +15,17 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "*",
-        port: "",
-        pathname: "/**"
-      }
-    ]
+        hostname: "dashboard.bantenprov.go.id",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api-apps.bmkg.go.id",
+        pathname: "/**",
+      },
+    ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
 };
 
 export default nextConfig;
