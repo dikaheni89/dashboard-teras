@@ -28,8 +28,20 @@ export async function GET(req: NextRequest) {
         'X-Forwarded-Host': host,
       },
       cache: 'no-store',
-      redirect: 'follow',
+      redirect: 'manual',
     });
+
+    if (res.status >= 300 && res.status < 400) {
+      return NextResponse.json(
+        {
+          authenticated: false,
+          message: 'No Valid Authorized',
+          profile: null,
+          redirectTo: res.headers.get('location'),
+        },
+        { status: 401 }
+      );
+    }
 
     const text = await res.text();
     let data: SsoVerifyPayload | null = null;
@@ -44,9 +56,10 @@ export async function GET(req: NextRequest) {
     const message =
       data?.message || (!authenticated && res.ok ? 'No Valid Authorized' : undefined);
     const profile =
-      data && typeof data === 'object'
+      authenticated && data && typeof data === 'object'
         ? { ...data, Auth: authenticated }
         : null;
+    const status = authenticated ? 200 : 401;
 
     return NextResponse.json(
       {
@@ -54,7 +67,7 @@ export async function GET(req: NextRequest) {
         message,
         profile,
       },
-      { status: res.status }
+      { status }
     );
   } catch (error) {
     console.error('Error calling SSO verify:', error);
