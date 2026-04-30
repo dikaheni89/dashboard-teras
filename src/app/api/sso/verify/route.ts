@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SSO_VERIFY_URL } from '@/config/server-constant';
 
+type SsoVerifyPayload = {
+  Auth?: boolean;
+  authenticated?: boolean;
+  message?: string;
+  [key: string]: unknown;
+};
+
 export async function GET(req: NextRequest) {
   try {
     const cookie = req.headers.get('cookie') || '';
@@ -24,8 +31,31 @@ export async function GET(req: NextRequest) {
       redirect: 'follow',
     });
 
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const text = await res.text();
+    let data: SsoVerifyPayload | null = null;
+
+    try {
+      data = text ? (JSON.parse(text) as SsoVerifyPayload) : null;
+    } catch {
+      data = { message: text || 'Invalid SSO verify response' };
+    }
+
+    const authenticated = Boolean(data?.Auth ?? data?.authenticated);
+    const message =
+      data?.message || (!authenticated && res.ok ? 'No Valid Authorized' : undefined);
+    const profile =
+      data && typeof data === 'object'
+        ? { ...data, Auth: authenticated }
+        : null;
+
+    return NextResponse.json(
+      {
+        authenticated,
+        message,
+        profile,
+      },
+      { status: res.status }
+    );
   } catch (error) {
     console.error('Error calling SSO verify:', error);
     return NextResponse.json(

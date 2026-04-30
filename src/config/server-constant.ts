@@ -37,7 +37,7 @@ export const ALLOWED_ORIGINS = [...baseOrigins, ...localhostFallback].map(normal
 
 // SSO constants
 export const SSO_VERIFY_URL =
-  process.env.SSO_VERIFY_URL || "https://api-dashboard.bantenprov.go.id/api/sso/verify";
+  process.env.SSO_VERIFY_URL || "https://layanan.bantenprov.go.id/v2/umah/auth";
 export const SSO_LOGIN_URL =
   process.env.SSO_LOGIN_URL || "https://pintu-umah.bantenprov.go.id";
 export const SSO_RESTRICTION_URL =
