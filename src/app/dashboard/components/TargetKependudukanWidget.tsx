@@ -9,6 +9,7 @@ import {IResponse} from "@/app/api/kependudukan/pencatatan/route";
 export default function TargetKependudukanWidget() {
   const apiUrl = `${getBasePath()}/api/kependudukan/pencatatan`;
   const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const pencatatan = data?.data;
 
   // Loading State
   if (isLoading) {
@@ -20,7 +21,7 @@ export default function TargetKependudukanWidget() {
   }
 
   // Error State
-  if (isError) {
+  if (isError || !pencatatan?.akta || !pencatatan?.kia || !pencatatan?.ktp) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
         <Text color="red.500">Gagal memuat data kependudukan.</Text>
@@ -31,15 +32,15 @@ export default function TargetKependudukanWidget() {
   // Mapping Data dari API
   const labels = ["Akta", "KIA", "KTP"];
   const capaianValues = [
-    parseInt((data?.data.akta.capaian ?? "0").replace(/\./g, "")),
-    parseInt((data?.data.kia.capaian ?? "0").replace(/\./g, "")),
-    parseInt((data?.data.ktp.capaian ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.akta.capaian ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.kia.capaian ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.ktp.capaian ?? "0").replace(/\./g, "")),
   ];
 
   const targetValues = [
-    parseInt((data?.data.akta.target ?? "0").replace(/\./g, "")),
-    parseInt((data?.data.kia.target ?? "0").replace(/\./g, "")),
-    parseInt((data?.data.ktp.target ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.akta.target ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.kia.target ?? "0").replace(/\./g, "")),
+    parseInt((pencatatan.ktp.target ?? "0").replace(/\./g, "")),
   ];
 
   const option = {

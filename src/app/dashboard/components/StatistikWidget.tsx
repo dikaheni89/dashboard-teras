@@ -1,38 +1,66 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import {Box, Flex, Heading, HStack, Progress, SimpleGrid, Spinner, Text} from '@chakra-ui/react';
-import InvestasiWidget from "@/app/dashboard/components/InvestasiWidget";
-import PendudukWidget from "@/app/dashboard/components/PendudukWidget";
-import KesehatanWidget from "@/app/dashboard/components/KesehatanWidget";
-import TrenKomoditasWidget from "@/app/dashboard/components/TrenKomoditasWidget";
-import PendapatanWidget from "@/app/dashboard/components/PendapatanWidget";
-import TargetKependudukanWidget from "@/app/dashboard/components/TargetKependudukanWidget";
 import {getBasePath} from "@/libs/utils/getBasePath";
 import useGetData from "@/app/hooks/useGetData";
 import {IResponse} from "@/app/api/keuangan/utama/route";
+
+const widgetFallback = () => (
+  <Box display="flex" justifyContent="center" alignItems="center" minH="200px">
+    <Spinner size="lg" />
+  </Box>
+);
+
+const InvestasiWidget = dynamic(() => import('@/app/dashboard/components/InvestasiWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
+const PendudukWidget = dynamic(() => import('@/app/dashboard/components/PendudukWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
+const KesehatanWidget = dynamic(() => import('@/app/dashboard/components/KesehatanWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
+const TrenKomoditasWidget = dynamic(() => import('@/app/dashboard/components/TrenKomoditasWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
+const PendapatanWidget = dynamic(() => import('@/app/dashboard/components/PendapatanWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
+const TargetKependudukanWidget = dynamic(() => import('@/app/dashboard/components/TargetKependudukanWidget'), {
+  ssr: false,
+  loading: widgetFallback,
+});
 
 export default function StatistikWidget() {
 
   const apiUrl = `${getBasePath()}/api/keuangan/utama`;
   const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const grafikBelanja = data?.data?.grafik_belanja_daerah;
+  const grafikPendapatan = data?.data?.grafik_pendapatan_daerah;
 
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
 
-  if (isError || !data) {
+  if (isError || !grafikBelanja || !grafikPendapatan) {
     return <Text>Gagal memuat data.</Text>;
   }
 
   const infrastrukturData = [
     {
       label: "Rincian Belanja Daerah",
-      value: data.data.grafik_belanja_daerah.persen,
+      value: grafikBelanja.persen ?? 0,
       color: "green",
     },
     {
       label: "Rincian Pendapatan Daerah",
-      value: data.data.grafik_pendapatan_daerah.persen,
+      value: grafikPendapatan.persen ?? 0,
       color: "blue",
     },
   ];

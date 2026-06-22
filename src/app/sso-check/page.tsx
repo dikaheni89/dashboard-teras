@@ -1,90 +1,91 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Box, Heading, Text, Code, VStack, Spinner } from '@chakra-ui/react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Box,
+  Flex,
+  Heading,
+  Progress,
+  Spinner,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
+import { APP_BASE_PATH } from '@/config/client-constant';
+import { clearStoredSsoSession, fetchDirectSsoSession } from '@/libs/utils/sso-client';
 
-type SsoProfile = {
-  Auth: boolean;
-  Type?: string;
-  NIP?: string;
-  FullName?: string;
-  OtherMail?: string;
-  BantenMail?: string;
-  Jab_ID?: string | null;
-  Jab?: string | null;
-  OPD_ID?: string | null;
-  OPD?: string | null;
-  SubOPD_ID?: string | null;
-  SubOPD?: string | null;
-  PD?: string | null;
-  Jab_Gol?: string | null;
-  Jab_KCL?: string | null;
-  Pangkat?: string | null;
-  Eselon?: string | null;
-  ImgAvatar?: string | null;
-  [key: string]: unknown;
-};
-
-type VerifyResponse = {
-  authenticated: boolean;
-  message?: string;
-  profile?: SsoProfile | null;
-};
+const DASHBOARD_PATH = `${APP_BASE_PATH}/dashboard`;
+const MAX_PROGRESS_SECONDS = 10;
 
 export default function SsoCheckPage() {
-  const [data, setData] = useState<VerifyResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
+  const [checkingSeconds, setCheckingSeconds] = useState(0);
+
+  const progressValue = useMemo(
+    () => Math.min((checkingSeconds / MAX_PROGRESS_SECONDS) * 100, 100),
+    [checkingSeconds]
+  );
 
   useEffect(() => {
-    const check = async () => {
+    void (async () => {
       try {
-        const res = await fetch('/api/sso/verify', {
-          method: 'GET',
-          credentials: 'include',
-          cache: 'no-store',
-        });
-        const json = (await res.json()) as VerifyResponse;
-        setData(json);
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'Failed to verify SSO');
-      } finally {
-        setLoading(false);
+        const verifyResult = await fetchDirectSsoSession();
+
+        if (!verifyResult.authenticated) {
+          await clearStoredSsoSession();
+        }
+      } catch {
+        await clearStoredSsoSession();
       }
-    };
-    check();
+    })();
   }, []);
 
-  if (loading) {
-    return (
-      <Box p={6}>
-        <Spinner />
-      </Box>
-    );
-  }
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCheckingSeconds((prev) => (prev >= MAX_PROGRESS_SECONDS ? prev : prev + 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (checkingSeconds >= MAX_PROGRESS_SECONDS) {
+      router.replace(DASHBOARD_PATH);
+    }
+  }, [checkingSeconds, router]);
 
   return (
-    <Box p={6}>
-      <Heading size="md" mb={4}>SSO Check</Heading>
-      {error && (
-        <Text color="red.500" mb={4}>
-          {error}
-        </Text>
-      )}
-      <VStack align="stretch" spacing={3}>
-        <Text>
-          Authenticated: {String(Boolean(data?.authenticated))}
-        </Text>
-        {data?.message && <Text>Message: {data.message}</Text>}
-        {data?.profile && (
+    <Flex minH="100vh" align="center" justify="center" bg="gray.50" px={4}>
+      <Box
+        w="full"
+        maxW="2xl"
+        bg="white"
+        rounded="xl"
+        shadow="lg"
+        borderWidth="1px"
+        p={{ base: 6, md: 8 }}
+      >
+        <VStack align="stretch" spacing={6}>
           <Box>
-            <Text mb={2}>Profile:</Text>
-            <Code whiteSpace="pre" display="block">
-              {JSON.stringify(data.profile, null, 2)}
-            </Code>
+            <Heading size="lg" color="blue.700">Cek Status SSO</Heading>
+            <Text mt={2} color="gray.600">
+              Sistem sedang memeriksa validitas endpoint SSO dan session login Anda.
+            </Text>
           </Box>
-        )}
-      </VStack>
-    </Box>
+
+          <Flex align="center" gap={3}>
+            <Spinner color="blue.500" size="lg" />
+            <Box>
+              <Text fontWeight="semibold">Memeriksa status Auth...</Text>
+              <Text fontSize="sm" color="gray.600">
+                Waktu pengecekan: {checkingSeconds} detik
+              </Text>
+            </Box>
+          </Flex>
+
+          <Progress value={progressValue} size="sm" colorScheme="blue" rounded="full" />
+        </VStack>
+      </Box>
+    </Flex>
   );
 }

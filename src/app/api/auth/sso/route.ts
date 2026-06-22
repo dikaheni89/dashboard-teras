@@ -1,9 +1,13 @@
-import { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server';
+import {
+  readSsoSessionValue,
+  SSO_SESSION_COOKIE_NAME,
+} from '@/libs/auth/sso-session';
 
 export async function GET(req: NextRequest) {
-  const encoded = req.headers.get('x-user-info');
-  const user = encoded ? JSON.parse(decodeURIComponent(encoded)) : null;
-  return new Response(JSON.stringify({ ok: true, user }), {
+  const user = readSsoSessionValue(req.cookies.get(SSO_SESSION_COOKIE_NAME)?.value);
+
+  return new Response(JSON.stringify({ ok: Boolean(user), user }), {
     headers: { 'Content-Type': 'application/json' },
   });
 }

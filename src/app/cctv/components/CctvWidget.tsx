@@ -9,48 +9,173 @@ import {
   Center,
   Spinner,
   Button,
-  HStack, IconButton,
-} from "@chakra-ui/react";
-import JSMpeg from '@cycjimmy/jsmpeg-player';
+  HStack,
+  IconButton,
+} from '@chakra-ui/react';
+import Hls from 'hls.js';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { getBasePath } from "@/libs/utils/getBasePath";
-import { IResponse } from "@/app/api/cctv/semua/route";
-import CctvKategori from "@/app/cctv/components/CctvKategori";
-import {ChevronDown, Fullscreen, Minimize2} from "lucide-react";
+import { getBasePath } from '@/libs/utils/getBasePath';
+import { IResponse } from '@/app/api/cctv/semua/route';
+import CctvKategori from '@/app/cctv/components/CctvKategori';
+import { ChevronDown, Fullscreen, Minimize2 } from 'lucide-react';
 
 export default function CctvWidget() {
   const apiUrl = `${getBasePath()}/api/cctv/semua`;
   const [data, setData] = useState<IResponse["data"]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [page, setPage] = useState(1);
+  const [, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [visibleCount, setVisibleCount] = useState(4);
   const [fullscreenId, setFullscreenId] = useState<string | null>(null);
-  const videoRefs = useRef<{ [key: string]: HTMLCanvasElement }>({});
-  const boxRefs = useRef<{ [key: string]: HTMLDivElement }>({});
-  const playerInstances = useRef<{ [key: string]: JSMpeg.Player }>({});
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const boxRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const hlsInstances = useRef<Record<string, Hls>>({});
+  const initializedStreams = useRef<Record<string, boolean>>({});
+  const [streamState, setStreamState] = useState<
+    Record<string, { isLoading: boolean; isError: boolean }>
+  >({});
 
-  const initializeVideoStream = (id: string) => {
+  const setStreamStateForId = useCallback(
+    (id: string, next: Partial<{ isLoading: boolean; isError: boolean }>) => {
+      setStreamState((prev) => {
+        const existing = prev[id] || { isLoading: false, isError: false };
+        return { ...prev, [id]: { ...existing, ...next } };
+      });
+    },
+    []
+  );
+
+  const resolveStreamCandidates = useCallback((itemId: string) => {
+    const baseURL = getBasePath() || '';
+    const normalizedBase = String(baseURL).replace(/\/$/, '');
+    const streamPath = `/stream-cctv/${encodeURIComponent(itemId)}/index.m3u8`;
+    const urls: string[] = [];
+    const pushUnique = (u: string) => {
+      const cleaned = String(u || '').trim();
+      if (!cleaned) return;
+      if (!urls.includes(cleaned)) urls.push(cleaned);
+    };
+
+    pushUnique(`${normalizedBase}${streamPath}`);
+
     if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        const canvas = videoRefs.current[id];
-        if (!canvas) {
-          console.warn(`Canvas for ID ${id} not yet initialized`);
+      const origin = window.location.origin.replace(/\/$/, '');
+      if (normalizedBase.startsWith('/')) {
+        pushUnique(`${origin}${normalizedBase}${streamPath}`);
+      } else if (!normalizedBase) {
+        pushUnique(`${origin}${streamPath}`);
+      }
+    }
+
+    pushUnique(streamPath);
+
+    return urls;
+  }, []);
+
+  const destroyStream = useCallback((id: string) => {
+    const existing = hlsInstances.current[id];
+    if (existing) {
+      existing.destroy();
+      delete hlsInstances.current[id];
+    }
+
+    delete initializedStreams.current[id];
+
+    const video = videoRefs.current[id];
+    if (video) {
+      try {
+        video.pause();
+      } catch {}
+      video.removeAttribute('src');
+      video.load();
+    }
+  }, []);
+
+  const initializeVideoStream = useCallback(
+    (id: string) => {
+      if (typeof window === 'undefined') return;
+      if (initializedStreams.current[id]) return;
+
+      const video = videoRefs.current[id];
+      if (!video) {
+        setTimeout(() => initializeVideoStream(id), 100);
+        return;
+      }
+
+      const urls = resolveStreamCandidates(id);
+      if (urls.length === 0) {
+        delete initializedStreams.current[id];
+        setStreamStateForId(id, { isLoading: false, isError: true });
+        return;
+      }
+
+      const tryAttach = (urlIndex: number) => {
+        const url = urls[urlIndex];
+        setStreamStateForId(id, { isLoading: true, isError: false });
+        video.muted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+
+        if (Hls.isSupported()) {
+          const hls = new Hls({ lowLatencyMode: true });
+          hlsInstances.current[id] = hls;
+          initializedStreams.current[id] = true;
+
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            setStreamStateForId(id, { isLoading: false, isError: false });
+            video.play().catch(() => {});
+          });
+
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data?.fatal) return;
+
+            destroyStream(id);
+
+            if (urlIndex + 1 < urls.length) {
+              tryAttach(urlIndex + 1);
+              return;
+            }
+
+            setStreamStateForId(id, { isLoading: false, isError: true });
+          });
+
+          hls.loadSource(url);
+          hls.attachMedia(video);
           return;
         }
 
-        const url = `wss://cctv.bantenprov.go.id/play?id=${encodeURIComponent(id)}`;
-        const player = new JSMpeg.Player(url, {
-          canvas,
-          autoplay: true,
-          loop: true,
-          audio: false,
-        });
-        playerInstances.current[id] = player;
-      }, 100); // 100ms delay
-    }
-  };
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          initializedStreams.current[id] = true;
+          const onLoaded = () => {
+            setStreamStateForId(id, { isLoading: false, isError: false });
+            video.play().catch(() => {});
+          };
+
+          const onError = () => {
+            destroyStream(id);
+            if (urlIndex + 1 < urls.length) {
+              tryAttach(urlIndex + 1);
+              return;
+            }
+            setStreamStateForId(id, { isLoading: false, isError: true });
+          };
+
+          video.addEventListener('loadedmetadata', onLoaded, { once: true });
+          video.addEventListener('error', onError, { once: true });
+          video.src = url;
+          return;
+        }
+
+        delete initializedStreams.current[id];
+        setStreamStateForId(id, { isLoading: false, isError: true });
+      };
+
+      tryAttach(0);
+    },
+    [destroyStream, resolveStreamCandidates, setStreamStateForId]
+  );
 
   const fetchCctvData = useCallback(async (page: number) => {
     setIsLoading(true);
@@ -81,16 +206,13 @@ export default function CctvWidget() {
   }, [fetchCctvData]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      data.slice(0, visibleCount).forEach((cctv) => {
-        if (videoRefs.current[cctv.id]) {
-          requestAnimationFrame(() => {
-            initializeVideoStream(cctv.id);
-          });
-        }
+    if (typeof window === 'undefined') return;
+    data.slice(0, visibleCount).forEach((cctv) => {
+      requestAnimationFrame(() => {
+        initializeVideoStream(cctv.id);
       });
-    }
-  }, [data, visibleCount]);
+    });
+  }, [data, initializeVideoStream, visibleCount]);
 
   const handleFullscreen = (id: string) => {
     const box = boxRefs.current[id];
@@ -111,14 +233,28 @@ export default function CctvWidget() {
   };
 
   const handleLoadMore = () => {
-    if (visibleCount + 4 <= data.length) {
-      setVisibleCount(visibleCount + 4);
-    } else {
-      fetchCctvData(page + 1);
-      setPage((prev) => prev + 1);
-      setVisibleCount(visibleCount + 4);
-    }
+    setVisibleCount((prev) => {
+      const nextVisible = prev + 4;
+      if (nextVisible > data.length && hasMore) {
+        setPage((prevPage) => {
+          const nextPage = prevPage + 1;
+          fetchCctvData(nextPage);
+          return nextPage;
+        });
+      }
+      return nextVisible;
+    });
   };
+
+  const destroyAllStreams = useCallback(() => {
+    Object.keys(hlsInstances.current).forEach((id) => destroyStream(id));
+  }, [destroyStream]);
+
+  useEffect(() => {
+    return () => {
+      destroyAllStreams();
+    };
+  }, [destroyAllStreams]);
 
   return (
     <>
@@ -155,14 +291,31 @@ export default function CctvWidget() {
                     borderRadius="md"
                     overflow="hidden"
                   >
-                    <canvas
-                      ref={(el) => {
-                        if (el) {
-                          videoRefs.current[cctv.id] = el;
-                        }
-                      }}
-                      style={{ width: '100%', height: '100%' }}
-                    />
+                    <Box position="absolute" inset={0}>
+                      <video
+                        ref={(el) => {
+                          if (el) {
+                            videoRefs.current[cctv.id] = el;
+                          }
+                        }}
+                        muted
+                        playsInline
+                        autoPlay
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </Box>
+                    {!!streamState[cctv.id]?.isLoading && (
+                      <Center position="absolute" inset={0} bg="blackAlpha.600" zIndex={2}>
+                        <Spinner size="sm" color="white" />
+                      </Center>
+                    )}
+                    {!!streamState[cctv.id]?.isError && (
+                      <Center position="absolute" inset={0} bg="blackAlpha.600" zIndex={2}>
+                        <Text color="red.300" fontSize="sm">
+                          Gagal memuat stream
+                        </Text>
+                      </Center>
+                    )}
                     <Text position="absolute" top={2} left={2} bg="blackAlpha.700" color="white" px={2} py={1} fontSize="xs" borderRadius="md">
                       LIVE
                     </Text>

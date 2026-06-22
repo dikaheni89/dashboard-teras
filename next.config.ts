@@ -7,6 +7,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_OWNER: process.env.APP_OWNER,
     NEXT_PUBLIC_APP_OWNER_URL: process.env.APP_OWNER_URL,
     NEXT_PUBLIC_APP_BASE_PATH: process.env.APP_BASE_PATH,
+    NEXT_PUBLIC_SSO_VERIFY_URL: process.env.SSO_VERIFY_URL,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production"

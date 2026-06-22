@@ -1,3 +1,5 @@
+'use client';
+
 import {Box, Heading, Spinner, Text} from "@chakra-ui/react";
 import {Bar} from "react-chartjs-2";
 import {
@@ -19,6 +21,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 export default function TrenKomoditasWidget() {
   const apiUrl = `${getBasePath()}/api/kesehatan/status`;
   const { data, isLoading, isError } = useGetData<IResponseStatus>(apiUrl);
+  const statusItems = Array.isArray(data?.data) ? data.data : [];
 
   if (isLoading) {
     return (
@@ -28,7 +31,7 @@ export default function TrenKomoditasWidget() {
     );
   }
 
-  if (isError) {
+  if (isError || !statusItems.length) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
         <Text color="red.500">Gagal memuat data status tempat tidur.</Text>
@@ -36,11 +39,11 @@ export default function TrenKomoditasWidget() {
     );
   }
 
-  const labels = data?.data.map((item, index) => item.status || `Status ${index + 1}`) || [];
-  const values = data?.data.map((item) => item.jumlah) || [];
+  const labels = statusItems.map((item, index) => item.status || `Status ${index + 1}`);
+  const values = statusItems.map((item) => item.jumlah);
 
   // Tentukan warna berdasarkan status
-  const backgroundColors = data?.data.map((item) => {
+  const backgroundColors = statusItems.map((item) => {
     const status = item.status?.toUpperCase() || "";
     if (status.includes("KOSONG")) {
       return "#10B981"; // Hijau untuk Kosong
@@ -49,7 +52,7 @@ export default function TrenKomoditasWidget() {
       return "#EF4444"; // Merah untuk Isi
     }
     return "#FBBF24"; // Default Kuning
-  }) || [];
+  });
 
   const barData = {
     labels: labels,

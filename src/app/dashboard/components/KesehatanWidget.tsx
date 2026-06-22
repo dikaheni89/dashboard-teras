@@ -34,6 +34,8 @@ export default function KesehatanWidget() {
     isLoading: isLoadingPasien,
     isError: isErrorPasien,
   } = useGetData<IResponsePasien>(apiUrlPasien.toString());
+  const statusItems = Array.isArray(statusData?.data) ? statusData.data : [];
+  const pasienItems = Array.isArray(pasienData?.data) ? pasienData.data : [];
 
   if (isLoadingStatus || isLoadingPasien) {
     return (
@@ -43,7 +45,7 @@ export default function KesehatanWidget() {
     );
   }
 
-  if (isErrorStatus || isErrorPasien) {
+  if (isErrorStatus || isErrorPasien || (!statusItems.length && !pasienItems.length)) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
         <Text color="red.500">Gagal memuat data kesehatan.</Text>
@@ -51,11 +53,11 @@ export default function KesehatanWidget() {
     );
   }
 
-  const statusLabels = statusData?.data.map((item) => item.status) || [];
-  const statusValues = statusData?.data.map((item) => item.jumlah) || [];
+  const statusLabels = statusItems.map((item) => item.status);
+  const statusValues = statusItems.map((item) => item.jumlah);
 
-  const pasienLabels = pasienData?.data.map((item) => item.departemen) || [];
-  const pasienValues = pasienData?.data.map((item) => item.jumlah) || [];
+  const pasienLabels = pasienItems.map((item) => item.departemen);
+  const pasienValues = pasienItems.map((item) => item.jumlah);
 
   const statusChartData = {
     labels: statusLabels,

@@ -26,8 +26,7 @@ export default function RootLayout({
       <body>
       <Providers>
         <CSSReset/>
-          <SsoGuard/>
-          {children}
+          <SsoGuard>{children}</SsoGuard>
           {process.env.NODE_ENV === 'development' && (
             <LayoutDetector/>
           )}

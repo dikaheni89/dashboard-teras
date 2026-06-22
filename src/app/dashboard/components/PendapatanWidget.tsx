@@ -22,6 +22,12 @@ export default function PendapatanWidget() {
   // API URL
   const apiUrl = `${getBasePath()}/api/keuangan/utama`;
   const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const rincianBelanja = Array.isArray(data?.data?.rincian_belanja_daerah)
+    ? data.data.rincian_belanja_daerah
+    : [];
+  const rincianPendapatan = Array.isArray(data?.data?.rincian_pendapatan_daerah)
+    ? data.data.rincian_pendapatan_daerah
+    : [];
 
   if (isLoading) {
     return (
@@ -31,7 +37,7 @@ export default function PendapatanWidget() {
     );
   }
 
-  if (isError) {
+  if (isError || (!rincianBelanja.length && !rincianPendapatan.length)) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
         <Text color="red.500">Gagal memuat data keuangan.</Text>
@@ -39,10 +45,10 @@ export default function PendapatanWidget() {
     );
   }
 
-  const belanjaLabels = data?.data.rincian_belanja_daerah.map((item) => item.uraian) || [];
-  const belanjaValues = data?.data.rincian_belanja_daerah.map((item) => item.realisasi_rp) || [];
-  const pendapatanLabels = data?.data.rincian_pendapatan_daerah.map((item) => item.uraian) || [];
-  const pendapatanValues = data?.data.rincian_pendapatan_daerah.map((item) => item.realisasi_rp) || [];
+  const belanjaLabels = rincianBelanja.map((item) => item.uraian);
+  const belanjaValues = rincianBelanja.map((item) => item.realisasi_rp);
+  const pendapatanLabels = rincianPendapatan.map((item) => item.uraian);
+  const pendapatanValues = rincianPendapatan.map((item) => item.realisasi_rp);
 
   // Konfigurasi Data untuk Doughnut Chart
   const belanjaChartData = {

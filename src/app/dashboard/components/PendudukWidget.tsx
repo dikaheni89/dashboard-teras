@@ -9,6 +9,7 @@ import {IResponse} from "@/app/api/kependudukan/jumlahwilayah/route";
 export default function PendudukWidget() {
   const apiUrl = `${getBasePath()}/api/kependudukan/jumlahwilayah`;
   const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const pendudukItems = Array.isArray(data?.data) ? data.data : [];
 
   // Jika loading tampilkan spinner
   if (isLoading) {
@@ -20,7 +21,7 @@ export default function PendudukWidget() {
   }
 
   // Jika error tampilkan pesan error
-  if (isError) {
+  if (isError || !pendudukItems.length) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
         <Text color="red.500">Gagal memuat data penduduk.</Text>
@@ -29,8 +30,8 @@ export default function PendudukWidget() {
   }
 
   // Mapping data untuk ECharts
-  const kabKotaNames = data?.data.map((item) => item.nama_kabkota) || [];
-  const jumlahPenduduk = data?.data.map((item) => item.jlh_pddk) || [];
+  const kabKotaNames = pendudukItems.map((item) => item.nama_kabkota);
+  const jumlahPenduduk = pendudukItems.map((item) => item.jlh_pddk);
 
   // Opsi konfigurasi ECharts
   const optionPertumbuhanPenduduk = {

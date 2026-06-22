@@ -46,10 +46,13 @@ export default function DashboardPage() {
     },
   ];
 
-  if (!isError && data) {
+  const utama = data?.data?.data_utama;
+
+  if (!isError && utama) {
     const {
-      data_utama: { target_pendapatan_daerah, realisasi_belanja_daerah },
-    } = data.data;
+      target_pendapatan_daerah,
+      realisasi_belanja_daerah,
+    } = utama;
 
     const subKeuangan = dataKeuangan?.data?.updated_at
       ? `per ${dayjs(dataKeuangan.data.updated_at).locale("id").format("MMMM YYYY")}`

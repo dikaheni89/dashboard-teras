@@ -21,6 +21,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 export default function InvestasiWidget() {
   const apiUrl = `${getBasePath()}/api/perizinan/sektor`;
   const { data, isLoading, isError } = useGetData<IResponse>(apiUrl.toString());
+  const investasi = Array.isArray(data?.data) ? data.data : [];
 
   if (isLoading) {
     return (
@@ -30,7 +31,7 @@ export default function InvestasiWidget() {
     );
   }
 
-  if (isError) {
+  if (isError || !investasi.length) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="250px">
         <Text color="red.500">Gagal memuat data</Text>
@@ -39,11 +40,11 @@ export default function InvestasiWidget() {
   }
 
   const dataInvestasi = {
-    labels: data?.data.map((item) => item.sektor),
+    labels: investasi.map((item) => item.sektor),
     datasets: [
       {
         label: "Realisasi",
-        data: data?.data.map((item) => item.jumlah),
+        data: investasi.map((item) => item.jumlah),
         backgroundColor: [
           '#FACC15',
           '#1E3A8A',

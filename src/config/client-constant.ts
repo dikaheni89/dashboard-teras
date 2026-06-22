@@ -16,3 +16,5 @@ export const NEXT_PUBLIC_SSO_LOGIN_URL =
   process.env.NEXT_PUBLIC_SSO_LOGIN_URL || 'https://pintu-umah.bantenprov.go.id';
 export const NEXT_PUBLIC_SSO_RESTRICTION_URL =
   process.env.NEXT_PUBLIC_SSO_RESTRICTION_URL || 'https://pintu-umah.bantenprov.go.id/notif/restriction/=1';
+export const NEXT_PUBLIC_SSO_VERIFY_URL =
+  process.env.NEXT_PUBLIC_SSO_VERIFY_URL || 'https://layanan.bantenprov.go.id/v2/umah/auth';
