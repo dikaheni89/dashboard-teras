@@ -133,8 +133,6 @@ export default function CctvWidget() {
 
     hls.on(Hls.Events.ERROR, (_event, data) => {
 
-      console.log(data);
-
       if (!data.fatal) return;
 
       switch (data.type) {
@@ -163,8 +161,6 @@ export default function CctvWidget() {
     hls.loadSource(resolveStreamUrl(id));
 
     const url = resolveStreamUrl(id);
-
-    console.log(url);
 
     hls.loadSource(url);
 
