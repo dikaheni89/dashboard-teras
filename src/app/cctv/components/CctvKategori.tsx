@@ -119,8 +119,6 @@ export default function CctvKategori() {
 
         hls.on(Hls.Events.ERROR, (_event, data) => {
 
-            console.log(data);
-
             if (!data.fatal) return;
 
             switch (data.type) {
