@@ -30,7 +30,7 @@ import useGetData from '@/app/hooks/useGetData';
 import { getBasePath } from '@/libs/utils/getBasePath';
 import {Area, CCTV, IResponse} from '@/app/api/cctv/kategori/route';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import JSMpeg from '@cycjimmy/jsmpeg-player';
+import Hls from "hls.js";
 
 export default function CctvKategori() {
   const apiUrl = `${getBasePath()}/api/cctv/kategori`;
@@ -42,9 +42,9 @@ export default function CctvKategori() {
   const [fullscreenId, setFullscreenId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const videoRefs = useRef<{ [key: string]: HTMLCanvasElement | null }>({});
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const boxRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const playerInstances = useRef<{ [key: string]: any }>({});
+  const hlsInstances = useRef<Record<string, Hls>>({});
 
   const handleFullscreen = (id: string) => {
     const box = boxRefs.current[id];
@@ -71,68 +71,90 @@ export default function CctvKategori() {
 
   const handleClose = () => {
     if (selectedArea) {
-      try {
-        if (playerInstances.current[selectedArea.id]) {
-          playerInstances.current[selectedArea.id].destroy();
-          delete playerInstances.current[selectedArea.id];
-        }
-      } catch (err) {
-        console.error('⚠️ Failed to destroy player instance:', err);
-      }
+      hlsInstances.current[selectedArea.id]?.destroy();
+      delete hlsInstances.current[selectedArea.id];
     }
     onClose();
     setIsLoadingStream(false);
     setIsErrorStream(false);
   };
 
-  const initializeVideoStream = useCallback((id: string) => {
-    const canvas = videoRefs.current[id];
+  const resolveStreamUrl = useCallback((id: string) => {
+    return `https://cctv.bantenprov.go.id/service/stream-cctv/${id}/index.m3u8`;
+  }, []);
 
-    if (!canvas) {
-      setTimeout(() => initializeVideoStream(id), 100);
-      return;
+  const initializeVideoStream = useCallback((id: string) => {
+
+    const video = videoRefs.current[id];
+
+    if (!video) {
+        setTimeout(() => initializeVideoStream(id), 100);
+        return;
     }
 
-    if (playerInstances.current[id]) {
-      playerInstances.current[id].destroy();
-      delete playerInstances.current[id];
+    if (hlsInstances.current[id]) {
+        hlsInstances.current[id].destroy();
+        delete hlsInstances.current[id];
     }
 
     setIsLoadingStream(true);
-    const url = `wss://cctv.bantenprov.go.id/play?id=${encodeURIComponent(id)}`;
 
-    try {
-      const player = new JSMpeg.Player(url, {
-        canvas,
-        autoplay: true,
-        loop: true,
-        audio: false,
-      });
+    if (Hls.isSupported()) {
 
-      playerInstances.current[id] = player;
-      let done = false;
-      const checkRenderInterval = setInterval(() => {
-        if (canvas && canvas.width > 0 && canvas.height > 0) {
-          setIsLoadingStream(false);
-          setIsErrorStream(false);
-          done = true;
-          clearInterval(checkRenderInterval);
-        }
-      }, 200);
+        const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+        });
 
-      setTimeout(() => {
-        if (!done) {
-          setIsLoadingStream(false);
-          setIsErrorStream(true);
-          clearInterval(checkRenderInterval);
-        }
-      }, 5000);
-    } catch (error) {
-      console.error('Error initializing player:', error);
-      setIsLoadingStream(false);
-      setIsErrorStream(true);
+        hlsInstances.current[id] = hls;
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+
+            setIsLoadingStream(false);
+            setIsErrorStream(false);
+
+            video.play().catch(console.error);
+
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+
+            console.log(data);
+
+            if (!data.fatal) return;
+
+            switch (data.type) {
+
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                    hls.startLoad();
+                    break;
+
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                    hls.recoverMediaError();
+                    break;
+
+                default:
+                    setIsLoadingStream(false);
+                    setIsErrorStream(true);
+                    hls.destroy();
+
+            }
+
+        });
+
+        hls.loadSource(resolveStreamUrl(id));
+
+        hls.attachMedia(video);
+
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+
+        video.src = resolveStreamUrl(id);
+
+        video.play();
+
     }
-  }, []);
+
+}, [resolveStreamUrl]);
 
   useEffect(() => {
     if (isOpen && selectedArea) {
@@ -143,19 +165,24 @@ export default function CctvKategori() {
   }, [isOpen, selectedArea, initializeVideoStream]);
 
   useEffect(() => {
-    const instances = playerInstances.current;
-    const id = selectedArea?.id;
-    return () => {
-      if (id && instances[id]) {
-        try {
-          instances[id].destroy();
-          delete instances[id];
-        } catch (err) {
-          console.error('Failed to destroy player during cleanup:', err);
-        }
+  const id = selectedArea?.id;
+
+  return () => {
+    if (!id) return;
+
+    const hls = hlsInstances.current[id];
+
+    if (hls) {
+      try {
+        hls.destroy();
+      } catch (err) {
+        console.error("Failed to destroy HLS:", err);
+      } finally {
+        delete hlsInstances.current[id];
       }
-    };
-  }, [selectedArea]);
+    }
+  };
+}, [selectedArea]);
 
   const getFilteredAreas = (): Area[] => {
     if (!data?.data) return [];
@@ -267,13 +294,22 @@ export default function CctvKategori() {
                   <Text color="red.500">⚠️ Gagal memuat video stream.</Text>
                 </Center>
               )}
-              <canvas
-                ref={(el) => {
-                  if (el && selectedArea) {
-                    videoRefs.current[selectedArea.id] = el;
-                  }
-                }}
-                style={{ width: '100%', height: '100%' }}
+              <video
+                  ref={(el) => {
+                      if (el && selectedArea) {
+                          videoRefs.current[selectedArea.id] = el;
+                      }
+                  }}
+                  muted
+                  autoPlay
+                  controls
+                  playsInline
+                  style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      background: "black"
+                  }}
               />
               <Button
                 size="sm"

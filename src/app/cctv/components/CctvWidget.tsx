@@ -92,90 +92,86 @@ export default function CctvWidget() {
     }
   }, []);
 
+  const resolveStreamUrl = useCallback((id: string) => {
+    return `https://cctv.bantenprov.go.id/service/stream-cctv/${encodeURIComponent(id)}/index.m3u8`;
+  }, []);
+
   const initializeVideoStream = useCallback(
-    (id: string) => {
-      if (typeof window === 'undefined') return;
-      if (initializedStreams.current[id]) return;
+  (id: string) => {
+    if (initializedStreams.current[id]) return;
 
-      const video = videoRefs.current[id];
-      if (!video) {
-        setTimeout(() => initializeVideoStream(id), 100);
-        return;
+    const video = videoRefs.current[id];
+
+    if (!video) {
+      setTimeout(() => initializeVideoStream(id), 100);
+      return;
+    }
+
+    destroyStream(id);
+
+    const hls = new Hls({
+      lowLatencyMode: true,
+      enableWorker: true,
+    });
+
+    hlsInstances.current[id] = hls;
+    initializedStreams.current[id] = true;
+
+    setStreamStateForId(id, {
+      isLoading: true,
+      isError: false,
+    });
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      setStreamStateForId(id, {
+        isLoading: false,
+        isError: false,
+      });
+
+      video.play().catch(console.error);
+    });
+
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+
+      console.log(data);
+
+      if (!data.fatal) return;
+
+      switch (data.type) {
+
+        case Hls.ErrorTypes.NETWORK_ERROR:
+          hls.startLoad();
+          break;
+
+        case Hls.ErrorTypes.MEDIA_ERROR:
+          hls.recoverMediaError();
+          break;
+
+        default:
+          destroyStream(id);
+
+          setStreamStateForId(id, {
+            isLoading: false,
+            isError: true,
+          });
       }
 
-      const urls = resolveStreamCandidates(id);
-      if (urls.length === 0) {
-        delete initializedStreams.current[id];
-        setStreamStateForId(id, { isLoading: false, isError: true });
-        return;
-      }
+    });
 
-      const tryAttach = (urlIndex: number) => {
-        const url = urls[urlIndex];
-        setStreamStateForId(id, { isLoading: true, isError: false });
-        video.muted = true;
-        video.autoplay = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
+    hls.attachMedia(video);
 
-        if (Hls.isSupported()) {
-          const hls = new Hls({ lowLatencyMode: true });
-          hlsInstances.current[id] = hls;
-          initializedStreams.current[id] = true;
+    hls.loadSource(resolveStreamUrl(id));
 
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            setStreamStateForId(id, { isLoading: false, isError: false });
-            video.play().catch(() => {});
-          });
+    const url = resolveStreamUrl(id);
 
-          hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (!data?.fatal) return;
+    console.log(url);
 
-            destroyStream(id);
+    hls.loadSource(url);
 
-            if (urlIndex + 1 < urls.length) {
-              tryAttach(urlIndex + 1);
-              return;
-            }
+  },
+  [destroyStream, resolveStreamUrl, setStreamStateForId]
+);
 
-            setStreamStateForId(id, { isLoading: false, isError: true });
-          });
-
-          hls.loadSource(url);
-          hls.attachMedia(video);
-          return;
-        }
-
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          initializedStreams.current[id] = true;
-          const onLoaded = () => {
-            setStreamStateForId(id, { isLoading: false, isError: false });
-            video.play().catch(() => {});
-          };
-
-          const onError = () => {
-            destroyStream(id);
-            if (urlIndex + 1 < urls.length) {
-              tryAttach(urlIndex + 1);
-              return;
-            }
-            setStreamStateForId(id, { isLoading: false, isError: true });
-          };
-
-          video.addEventListener('loadedmetadata', onLoaded, { once: true });
-          video.addEventListener('error', onError, { once: true });
-          video.src = url;
-          return;
-        }
-
-        delete initializedStreams.current[id];
-        setStreamStateForId(id, { isLoading: false, isError: true });
-      };
-
-      tryAttach(0);
-    },
-    [destroyStream, resolveStreamCandidates, setStreamStateForId]
-  );
 
   const fetchCctvData = useCallback(async (page: number) => {
     setIsLoading(true);
